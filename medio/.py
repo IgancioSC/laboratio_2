@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 
+
 import rospy
 from geometry_msgs.msg import Twist
 import sys
 import select
 import termios
 import tty
+import math
 
-KEYS= ["w", "a", "s", "d"]
 
 class TeleopTurtleSim:
-    def _init_(self):
-        rospy.init_node('little_turle', anonymous=False)
+    def __init__(self):
+        rospy.init_node('tri', anonymous=False)
         self.pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=5)
         self.twist = Twist()
-        self.rate = rospy.Rate(10)  # 10Hz
+        self.rate = rospy.Rate(1)  # Reducido a 1Hz para facilitar la visualización
         self.key = None
         self.settings = termios.tcgetattr(sys.stdin)
 
@@ -26,33 +27,34 @@ class TeleopTurtleSim:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
 
     def teleopLoop(self):
-        rospy.loginfo("Usa las teclas de flecha para controlar el turtle. Presiona Ctrl-C para salir.")
+        rospy.loginfo("Presiona Ctrl-C para salir y observa cómo la tortuga forma un triángulo equilátero.")
 
-        while not rospy.is_shutdown():
-            self.getKey()
-            rospy.loginfo("Tecla presionada: {}".format(self.key))  # Mensaje de depuración
-            if self.key == '\x03':  # Ctrl-C
-                break
-            self.processKey()
+        for _ in range(4):
+            # Avanzar hacia adelante
+            self.twist.linear.x = 1.0
+            self.twist.angular.z = 0.0
             self.pub.publish(self.twist)
             self.rate.sleep()
 
-    def processKey(self):
-        if self.key == 'w':
-            self.twist.linear.x = 1.0
-            self.twist.angular.z = 0.0
-        elif self.key == 's':
-            self.twist.linear.x = -1.0
-            self.twist.angular.z = 0.0
-        elif self.key == 'a':
-            self.twist.linear.x = 0.0
-            self.twist.angular.z = 1.0
-        elif self.key == 'd':
-            self.twist.linear.x = 0.0
-            self.twist.angular.z = -1.0
-        else:
+            # Detenerse
             self.twist.linear.x = 0.0
             self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Girar 120 grados hacia la izquierda
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = math.radians(120)  # Convertir 120 grados a radianes
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Detenerse
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+        rospy.loginfo("Triángulo equilátero completado. Saliendo del bucle.")
 
 
 if __name__ == '__main__':
