@@ -16,3 +16,95 @@ El listener está suscrito a ese mismo tópico y recibe los mensajes publicados 
 Cada vez que el listener recibe un mensaje, llama a chatter_callback donde este registra el mensaje recibido y asi esto se repetira cada que el master este levantado y el nodo funcionando.
 
 # creacion del programa para mover la tortuga con W,S,A y D y creacion del cuadrado y el triangulo en el nivel intermedio
+
+En este apartado diseñamos un codigo para que la tortuga pueda moverse con las teclas W,S,A y D, cuando se resulve este problema pasamos a diseñar el cuadrado con la tortuga mediante cordenadas y recordar que tambien usaremos un launch nuevo para este nodo, donde tenemos que: 
+* Se inicializa un nodo ROS con el nombre "turtle" utilizando rospy.init_node()
+* Se crea un publicador que publica en el tema "/turtle1/cmd_vel" para enviar comandos de velocidad a la tortuga.
+
+Configuramos las variables y el teclado:
+
+* Se inicializan variables para almacenar los mensajes de velocidad (Twist), la tasa de publicación (Rate) y la tecla presionada (key).
+* Se configura el teclado para leer una sola tecla sin necesidad de presionar Enter.
+```python
+#!/usr/bin/env python3
+
+import rospy
+from geometry_msgs.msg import Twist
+import sys
+import select
+import termios
+import tty
+
+
+class TeleopTurtleSim:
+    def __init__(self):
+        rospy.init_node('turle', anonymous=False)
+        self.pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=5)
+        self.twist = Twist()
+        self.rate = rospy.Rate(1)  # Reducido a 1Hz para facilitar la visualización
+        self.key = None
+        self.settings = termios.tcgetattr(sys.stdin)
+
+    def getKey(self):
+        tty.setraw(sys.stdin.fileno())
+        rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+        if rlist:
+            self.key = sys.stdin.read(1)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+
+    def teleopLoop(self):
+        rospy.loginfo("Presiona Ctrl-C para salir y observa cómo la tortuga forma un cuadrado.")
+
+        for _ in range(5):
+            # Avanzar hacia adelante
+            self.twist.linear.x = 1.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Detenerse
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Girar 90 grados hacia la izquierda
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 2  # 1.57 radianes es aproximadamente 90 grados
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Detenerse
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+        rospy.loginfo("Cuadrado completado. Saliendo del bucle.")
+
+
+if __name__ == '__main__':
+    teleop_turtlesim = TeleopTurtleSim()
+    try:
+        teleop_turtlesim.teleopLoop()
+    except rospy.ROSInterruptException:
+        pass
+ ```
+En este codigo tenemos lo siguiente para forma la figura del cubo:
+
+Función getKey():
+
+* Esta función se encarga de leer la entrada del teclado para determinar qué tecla se ha presionado.
+
+Bucle de control teleopLoop():
+* Este bucle se ejecuta hasta que se interrumpe el programa.
+* Se imprime un mensaje de instrucción para indicar cómo salir del programa y qué hará la tortuga.
+* El bucle se repite 5 veces para formar un cuadrado.
+* En cada iteración:
+  1. La tortuga avanza hacia adelante durante un segundo (linear.x = 1.0) durante un período de tiempo. Esto se logra estableciendo self.twist.linear.x = 1.0, espués de avanzar durante un tiempo (determinado por self.rate.sleep()), se detiene configurando self.twist.linear.x = 0.0. Esto detiene el movimiento lineal de la tortuga.
+  2. Luego se detiene.
+  3. La tortuga gira 90° hacia la izquierda (angular.z = 2).
+  4. Luego se detiene nuevamente.
+     
+Por ultimo se maneja la excepción "ROSErrorInterruptException" para salir del bucle y finalizar el programa limpiamente cuando se presiona Ctrl-C.
+## triangulo
