@@ -117,6 +117,10 @@ Bucle de control teleopLoop():
 Por ultimo se maneja la excepción "ROSErrorInterruptException" para salir del bucle y finalizar el programa limpiamente cuando se presiona Ctrl-C.
 ## triangulo
 Para el codigo del triangulo vamos a modifar algunos puntos pára que ahora no forme un cuadrado pero ya es mas facil por el avance que tenemos al sacar el movimeinto de la tortuga con teclas y al formar el cubo.
+
+Acontinuacion se muestra una imagen al ejecutar el nodo:
+![image](https://github.com/IgancioSC/laboratio_2/assets/157633777/472eaa4d-04ab-41b2-9be8-d70777ce2a49)
+
 ```python
 #!/usr/bin/env python3
 
