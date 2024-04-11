@@ -25,6 +25,8 @@ Configuramos las variables y el teclado:
 
 * Se inicializan variables para almacenar los mensajes de velocidad (Twist), la tasa de publicación (Rate) y la tecla presionada (key).
 * Se configura el teclado para leer una sola tecla sin necesidad de presionar Enter.
+
+## Cuadrado
 ```python
 #!/usr/bin/env python3
 
@@ -92,9 +94,15 @@ if __name__ == '__main__':
  ```
 En este codigo tenemos lo siguiente para forma la figura del cubo:
 
-Función getKey():
+Inicialización del nodo y publicador:
+* Se inicializa un nodo con el nombre 'turle' utilizando rospy.init_node().
+* Se crea un publicador que publica en el tema '/turtle1/cmd_vel' para enviar comandos de velocidad a la tortuga.
 
-* Esta función se encarga de leer la entrada del teclado para determinar qué tecla se ha presionado.
+Inicialización de variables y configuración de teclado:
+
+* Se inicializan variables para almacenar los mensajes de velocidad (Twist), la tasa de publicación (Rate) y la tecla presionada (key).
+* Se configura el teclado para leer una sola tecla sin necesidad de presionar Enter.
+*Función getKey():Esta función se encarga de leer la entrada del teclado para determinar qué tecla se ha presionado.
 
 Bucle de control teleopLoop():
 * Este bucle se ejecuta hasta que se interrumpe el programa.
@@ -108,3 +116,93 @@ Bucle de control teleopLoop():
      
 Por ultimo se maneja la excepción "ROSErrorInterruptException" para salir del bucle y finalizar el programa limpiamente cuando se presiona Ctrl-C.
 ## triangulo
+Para el codigo del triangulo vamos a modifar algunos puntos pára que ahora no forme un cuadrado pero ya es mas facil por el avance que tenemos al sacar el movimeinto de la tortuga con teclas y al formar el cubo.
+```python
+#!/usr/bin/env python3
+
+
+import rospy
+from geometry_msgs.msg import Twist
+import sys
+import select
+import termios
+import tty
+import math
+
+
+class TeleopTurtleSim:
+    def __init__(self):
+        rospy.init_node('tri', anonymous=False)
+        self.pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=5)
+        self.twist = Twist()
+        self.rate = rospy.Rate(1)  # Reducido a 1Hz para facilitar la visualización
+        self.key = None
+        self.settings = termios.tcgetattr(sys.stdin)
+
+    def getKey(self):
+        tty.setraw(sys.stdin.fileno())
+        rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+        if rlist:
+            self.key = sys.stdin.read(1)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+
+    def teleopLoop(self):
+        rospy.loginfo("Presiona Ctrl-C para salir y observa cómo la tortuga forma un triángulo equilátero.")
+
+        for _ in range(4):
+            # Avanzar hacia adelante
+            self.twist.linear.x = 1.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Detenerse
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Girar 120 grados hacia la izquierda
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = math.radians(120)  # Convertir 120 grados a radianes
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+            # Detenerse
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            self.pub.publish(self.twist)
+            self.rate.sleep()
+
+        rospy.loginfo("Triángulo equilátero completado. Saliendo del bucle.")
+
+
+if __name__ == '__main__':
+    teleop_turtlesim = TeleopTurtleSim()
+    try:
+        teleop_turtlesim.teleopLoop()
+    except rospy.ROSInterruptException:
+        pass
+```
+A grandes rasgos lo que se hace este esta parte con el codigo presentado comenzamos por:
+
+Inicialización del nodo y publicador:
+* Se inicializa un nodo ROS con el nombre 'tri' utilizando rospy.init_node().
+* Se crea un publicador que publica en el tema '/turtle1/cmd_vel' para enviar comandos de velocidad a la tortuga.
+
+Inicialización de variables y configuración de teclado:
+* Se inicializan variables para almacenar los mensajes de velocidad (Twist), la tasa de publicación (Rate) y la tecla presionada (key).
+* Se configura el teclado para leer una sola tecla sin necesidad de presionar Enter.
+* Método getKey(): Esta función se encarga de leer la entrada del teclado para determinar qué tecla se ha presionado.
+
+Bucle de control teleopLoop():
+* Este bucle se ejecuta hasta que se interrumpe el programa.
+* Se imprime un mensaje de instrucción para indicar cómo salir del programa y qué hará la tortuga.
+* El bucle se repite 4 veces para formar un triángulo equilátero.
+* En cada iteración:
+  1. La tortuga avanza hacia adelante durante un período de tiempo (linear.x = 1.0).
+  2. Luego se detiene.
+  3. La tortuga gira 120° hacia la izquierda (angular.z = math.radians(120)) para formar un ángulo interno del triángulo equilátero.
+  4. Luego se detiene nuevamente.
+
+# Avanzado: diseñar un controlador PID
